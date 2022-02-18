@@ -69,7 +69,7 @@ function wc_payglocal_payment_gateway_init()
             $this->private_kid = $this->get_option('private_kid');
             $this->public_pem = $this->get_option('public_pem');
             $this->private_pem = $this->get_option('private_pem');
-            $this->payment_endpoint = ($this->payment_mode) ? 'https://api.payglocal.in' : 'https://api.dev.payglocal.in';
+            $this->payment_endpoint = ($this->payment_mode) ? 'https://api.prod.payglocal.in' : 'https://api.uat.payglocal.in';
             add_action('woocommerce_update_options_payment_gateways_' . $this->id, array($this, 'process_admin_options'));
             add_action('woocommerce_api_wc_payglocal_payment_gateway', array($this, 'check_payglocal_payment_response'));
             add_action('woocommerce_order_details_after_order_table', array($this, 'order_details_after_order_table'), 9);
