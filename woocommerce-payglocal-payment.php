@@ -5,7 +5,7 @@
  * Description: This plugin allows any merchant to accept payments with payglocal payment service
  * Author: PayGlocal
  * Author URI: https://payglocal.in
- * Version: 1.0.0
+ * Version: 1.1.0
  * Text Domain: woocommerce-payglocal-payment
  * Domain Path: /languages
  *
@@ -368,7 +368,18 @@ function wc_payglocal_payment_gateway_init()
         protected function createPayGlSPaymentDatas($order_id)
         {
             $order = wc_get_order($order_id);
-
+            
+            $products = array();
+            foreach ($order->get_items() as $item_id => $item) {
+                $product = $item->get_product();
+                $data = [
+                    'productDescription' => $item->get_name(),
+                    'itemUnitPrice' => $product->get_price(),
+                    'itemQuantity' => $item->get_quantity()
+                ];
+                $products[] = $data;
+            }
+            
             $data = [
                 "merchantTxnId" => $order->id . '#' . $this->createPayGlSRandomString(16),
                 "merchantUniqueId" => $order->id . '#' . $this->createPayGlSRandomString(16),
@@ -384,12 +395,42 @@ function wc_payglocal_payment_gateway_init()
                         "addressState" => $order->get_billing_state(),
                         "addressPostalCode" => $order->get_billing_postcode(),
                         "addressCountry" => $order->get_billing_country(),
-                        "emailId" => $order->get_billing_email()
+                        "emailId" => $order->get_billing_email(),
+                        "callingCode" => "",
+                        "phoneNumber" => $order->get_billing_phone(),
                     )
+                ),
+                "riskData" => array(
+                    "orderData" => $products,
+                    "customerData" => array(
+                        //"merchantAssignedCustomerId" => $customer->id,
+                        //"customerAccountType" => "1",
+                        //"customerAccountCreationDate" => date_create($customer->date_add),
+                        "ipAddress" => $order->get_customer_ip_address(),
+                        "httpAccept" => isset($_SERVER['HTTP_ACCEPT']) ? $_SERVER['HTTP_ACCEPT'] : null,
+                        "httpUserAgent" => $order->get_customer_user_agent(),
+                    ),
+                    "shippingData" => array(
+                        "firstName" => $order->get_shipping_first_name(),
+                        "lastName" => $order->get_shipping_last_name(),
+                        "addressStreet1" => $order->get_shipping_address_1(),
+                        "addressStreet2" => $order->get_shipping_address_2(),
+                        "addressCity" => $order->get_shipping_city(),
+                        "addressState" => $order->get_shipping_state(),
+                        "addressPostalCode" => $order->get_shipping_postcode(),
+                        "addressCountry" => $order->get_shipping_country(),
+                        "emailId" => $order->get_billing_email(),
+                        "callingCode" => "",
+                        "phoneNumber" => $order->get_shipping_phone(),
+                    )
+                ),
+                "clientPlatformDetails" => array(
+                    "platformName" => "Woocommerce",
+                    "platformVersion" => $order->get_version(),
                 ),
                 "merchantCallbackURL" => WC()->api_request_url('WC_PayGlocal_Payment_Gateway')
             ];
-
+            
             return json_encode($data);
         }
 
@@ -406,6 +447,7 @@ function wc_payglocal_payment_gateway_init()
 
         public function check_payglocal_payment_response()
         {
+            WC()->session->set_customer_session_cookie(true);
             $response = $_POST;
             if (isset($response['x-gl-token']) && array_key_exists('x-gl-token', $response)) {
                 $payment = $this->verifyPayGlSPayment($response['x-gl-token']);
