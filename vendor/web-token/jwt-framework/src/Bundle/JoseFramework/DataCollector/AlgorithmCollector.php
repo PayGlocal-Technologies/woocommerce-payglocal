@@ -2,28 +2,41 @@
 
 declare(strict_types=1);
 
+/*
+ * The MIT License (MIT)
+ *
+ * Copyright (c) 2014-2018 Spomky-Labs
+ *
+ * This software may be modified and distributed under the terms
+ * of the MIT license.  See the LICENSE file for details.
+ */
+
 namespace Jose\Bundle\JoseFramework\DataCollector;
 
-use function array_key_exists;
-use function function_exists;
 use Jose\Component\Core\Algorithm;
 use Jose\Component\Core\AlgorithmManagerFactory;
 use Jose\Component\Encryption\Algorithm\ContentEncryptionAlgorithm;
 use Jose\Component\Encryption\Algorithm\KeyEncryptionAlgorithm;
-use Jose\Component\Signature\Algorithm\MacAlgorithm;
 use Jose\Component\Signature\Algorithm\SignatureAlgorithm;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Throwable;
 
-final class AlgorithmCollector implements Collector
+class AlgorithmCollector implements Collector
 {
-    public function __construct(
-        private readonly AlgorithmManagerFactory $algorithmManagerFactory
-    ) {
+    /**
+     * @var AlgorithmManagerFactory
+     */
+    private $algorithmManagerFactory;
+
+    /**
+     * AlgorithmCollector constructor.
+     */
+    public function __construct(AlgorithmManagerFactory $algorithmManagerFactory)
+    {
+        $this->algorithmManagerFactory = $algorithmManagerFactory;
     }
 
-    public function collect(array &$data, Request $request, Response $response, ?Throwable $exception = null): void
+    public function collect(array &$data, Request $request, Response $response, \Exception $exception = null)
     {
         $algorithms = $this->algorithmManagerFactory->all();
         $data['algorithm'] = [
@@ -31,18 +44,11 @@ final class AlgorithmCollector implements Collector
             'algorithms' => [],
         ];
         $signatureAlgorithms = 0;
-        $macAlgorithms = 0;
         $keyEncryptionAlgorithms = 0;
         $contentEncryptionAlgorithms = 0;
         foreach ($algorithms as $alias => $algorithm) {
-            $type = $this->getAlgorithmType(
-                $algorithm,
-                $signatureAlgorithms,
-                $macAlgorithms,
-                $keyEncryptionAlgorithms,
-                $contentEncryptionAlgorithms
-            );
-            if (! array_key_exists($type, $data['algorithm']['algorithms'])) {
+            $type = $this->getAlgorithmType($algorithm, $signatureAlgorithms, $keyEncryptionAlgorithms, $contentEncryptionAlgorithms);
+            if (!\array_key_exists($type, $data['algorithm']['algorithms'])) {
                 $data['algorithm']['algorithms'][$type] = [];
             }
             $data['algorithm']['algorithms'][$type][$alias] = [
@@ -52,40 +58,26 @@ final class AlgorithmCollector implements Collector
 
         $data['algorithm']['types'] = [
             'signature' => $signatureAlgorithms,
-            'mac' => $macAlgorithms,
             'key_encryption' => $keyEncryptionAlgorithms,
             'content_encryption' => $contentEncryptionAlgorithms,
         ];
     }
 
-    private function getAlgorithmType(
-        Algorithm $algorithm,
-        int &$signatureAlgorithms,
-        int &$macAlgorithms,
-        int &$keyEncryptionAlgorithms,
-        int &$contentEncryptionAlgorithms
-    ): string {
+    private function getAlgorithmType(Algorithm $algorithm, int &$signatureAlgorithms, int &$keyEncryptionAlgorithms, int &$contentEncryptionAlgorithms): string
+    {
         switch (true) {
             case $algorithm instanceof SignatureAlgorithm:
                 $signatureAlgorithms++;
 
                 return 'Signature';
-
-            case $algorithm instanceof MacAlgorithm:
-                $macAlgorithms++;
-
-                return 'MAC';
-
             case $algorithm instanceof KeyEncryptionAlgorithm:
                 $keyEncryptionAlgorithms++;
 
                 return 'Key Encryption';
-
             case $algorithm instanceof ContentEncryptionAlgorithm:
                 $contentEncryptionAlgorithms++;
 
                 return 'Content Encryption';
-
             default:
                 return 'Unknown';
         }
@@ -93,7 +85,7 @@ final class AlgorithmCollector implements Collector
 
     private function getAlgorithmMessages(): array
     {
-        $messages = [
+        return [
             'none' => [
                 'severity' => 'severity-low',
                 'message' => 'This algorithm is not secured. Please use with caution.',
@@ -105,18 +97,6 @@ final class AlgorithmCollector implements Collector
             'RS1' => [
                 'severity' => 'severity-high',
                 'message' => 'Experimental. Please use for testing purpose only. SHA-1 hashing function is not recommended.',
-            ],
-            'RS256' => [
-                'severity' => 'severity-medium',
-                'message' => 'RSAES-PKCS1-v1_5 based algorithms are not recommended.',
-            ],
-            'RS384' => [
-                'severity' => 'severity-medium',
-                'message' => 'RSAES-PKCS1-v1_5 based algorithms are not recommended.',
-            ],
-            'RS512' => [
-                'severity' => 'severity-medium',
-                'message' => 'RSAES-PKCS1-v1_5 based algorithms are not recommended.',
             ],
             'HS1' => [
                 'severity' => 'severity-high',
@@ -158,35 +138,35 @@ final class AlgorithmCollector implements Collector
                 'severity' => 'severity-low',
                 'message' => 'Experimental. Please use for testing purpose only.',
             ],
-            'A128CCM-16-64' => [
+            'AES-CCM-16-64-128' => [
                 'severity' => 'severity-low',
                 'message' => 'Experimental and subject to changes. Please use for testing purpose only.',
             ],
-            'A256CCM-16-64' => [
+            'AES-CCM-16-64-256' => [
                 'severity' => 'severity-low',
                 'message' => 'Experimental and subject to changes. Please use for testing purpose only.',
             ],
-            'A128CCM-64-64' => [
+            'AES-CCM-64-64-128' => [
                 'severity' => 'severity-low',
                 'message' => 'Experimental and subject to changes. Please use for testing purpose only.',
             ],
-            'A256CCM-64-64' => [
+            'AES-CCM-64-64-256' => [
                 'severity' => 'severity-low',
                 'message' => 'Experimental and subject to changes. Please use for testing purpose only.',
             ],
-            'A128CCM-16-128' => [
+            'AES-CCM-16-128-128' => [
                 'severity' => 'severity-low',
                 'message' => 'Experimental and subject to changes. Please use for testing purpose only.',
             ],
-            'A256CCM-16-128' => [
+            'AES-CCM-16-128-256' => [
                 'severity' => 'severity-low',
                 'message' => 'Experimental and subject to changes. Please use for testing purpose only.',
             ],
-            'A128CCM-64-128' => [
+            'AES-CCM-64-128-128' => [
                 'severity' => 'severity-low',
                 'message' => 'Experimental and subject to changes. Please use for testing purpose only.',
             ],
-            'A256CCM-64-128' => [
+            'AES-CCM-64-128-256' => [
                 'severity' => 'severity-low',
                 'message' => 'Experimental and subject to changes. Please use for testing purpose only.',
             ],
@@ -194,28 +174,22 @@ final class AlgorithmCollector implements Collector
                 'severity' => 'severity-high',
                 'message' => 'This algorithm is not secured (known attacks). See <a target="_blank" href="https://tools.ietf.org/html/draft-irtf-cfrg-webcrypto-algorithms-00#section-5">https://tools.ietf.org/html/draft-irtf-cfrg-webcrypto-algorithms-00#section-5</a>.',
             ],
+            'ECDH-ES' => [
+                'severity' => 'severity-medium',
+                'message' => 'This algorithm is very slow when used with curves P-256, P-384, P-521.',
+            ],
+            'ECDH-ES+A128KW' => [
+                'severity' => 'severity-medium',
+                'message' => 'This algorithm is very slow when used with curves P-256, P-384, P-521.',
+            ],
+            'ECDH-ES+A192KW' => [
+                'severity' => 'severity-medium',
+                'message' => 'This algorithm is very slow when used with curves P-256, P-384, P-521.',
+            ],
+            'ECDH-ES+A256KW' => [
+                'severity' => 'severity-medium',
+                'message' => 'This algorithm is very slow when used with curves P-256, P-384, P-521.',
+            ],
         ];
-        if (! function_exists('openssl_pkey_derive')) {
-            $messages += [
-                'ECDH-ES' => [
-                    'severity' => 'severity-medium',
-                    'message' => 'This algorithm is very slow when used with curves P-256, P-384, P-521 with php 7.2 and below.',
-                ],
-                'ECDH-ES+A128KW' => [
-                    'severity' => 'severity-medium',
-                    'message' => 'This algorithm is very slow when used with curves P-256, P-384, P-521 with php 7.2 and below.',
-                ],
-                'ECDH-ES+A192KW' => [
-                    'severity' => 'severity-medium',
-                    'message' => 'This algorithm is very slow when used with curves P-256, P-384, P-521 with php 7.2 and below.',
-                ],
-                'ECDH-ES+A256KW' => [
-                    'severity' => 'severity-medium',
-                    'message' => 'This algorithm is very slow when used with curves P-256, P-384, P-521 with php 7.2 and below.',
-                ],
-            ];
-        }
-
-        return $messages;
     }
 }

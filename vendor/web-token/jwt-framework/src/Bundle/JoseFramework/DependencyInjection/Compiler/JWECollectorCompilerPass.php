@@ -2,6 +2,15 @@
 
 declare(strict_types=1);
 
+/*
+ * The MIT License (MIT)
+ *
+ * Copyright (c) 2014-2018 Spomky-Labs
+ *
+ * This software may be modified and distributed under the terms
+ * of the MIT license.  See the LICENSE file for details.
+ */
+
 namespace Jose\Bundle\JoseFramework\DependencyInjection\Compiler;
 
 use Jose\Bundle\JoseFramework\DataCollector\JWECollector;
@@ -10,14 +19,11 @@ use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Definition;
 use Symfony\Component\DependencyInjection\Reference;
 
-final class JWECollectorCompilerPass implements CompilerPassInterface
+class JWECollectorCompilerPass implements CompilerPassInterface
 {
-    /**
-     * {@inheritdoc}
-     */
-    public function process(ContainerBuilder $container): void
+    public function process(ContainerBuilder $container)
     {
-        if (! $container->hasDefinition(JWECollector::class)) {
+        if (!$container->hasDefinition(JWECollector::class)) {
             return;
         }
 
@@ -33,12 +39,8 @@ final class JWECollectorCompilerPass implements CompilerPassInterface
         }
     }
 
-    private function collectServices(
-        string $method,
-        string $tag,
-        Definition $definition,
-        ContainerBuilder $container
-    ): void {
+    private function collectServices(string $method, string $tag, Definition $definition, ContainerBuilder $container)
+    {
         $taggedJWEServices = $container->findTaggedServiceIds($tag);
         foreach ($taggedJWEServices as $id => $tags) {
             $definition->addMethodCall($method, [$id, new Reference($id)]);

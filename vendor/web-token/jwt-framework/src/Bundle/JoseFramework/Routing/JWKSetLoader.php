@@ -2,6 +2,15 @@
 
 declare(strict_types=1);
 
+/*
+ * The MIT License (MIT)
+ *
+ * Copyright (c) 2014-2018 Spomky-Labs
+ *
+ * This software may be modified and distributed under the terms
+ * of the MIT license.  See the LICENSE file for details.
+ */
+
 namespace Jose\Bundle\JoseFramework\Routing;
 
 use Symfony\Component\Config\Loader\LoaderInterface;
@@ -9,49 +18,44 @@ use Symfony\Component\Config\Loader\LoaderResolverInterface;
 use Symfony\Component\Routing\Route;
 use Symfony\Component\Routing\RouteCollection;
 
-final class JWKSetLoader implements LoaderInterface
+class JWKSetLoader implements LoaderInterface
 {
-    private readonly RouteCollection $routes;
+    /**
+     * @var RouteCollection
+     */
+    private $routes;
 
-    private LoaderResolverInterface $resolver;
-
+    /**
+     * JWKSetLoader Constructor.
+     */
     public function __construct()
     {
         $this->routes = new RouteCollection();
     }
 
-    public function add(string $pattern, string $name): void
+    public function add(string $pattern, string $name)
     {
-        $defaults = [
-            '_controller' => $name,
-        ];
+        $controller_id = \sprintf('%s:getAction', $name);
+        $defaults = ['_controller' => $controller_id];
         $route = new Route($pattern, $defaults);
-        $this->routes->add(sprintf('jwkset_%s', $name), $route);
+        $this->routes->add(\sprintf('jwkset_%s', $name), $route);
     }
 
-    /**
-     * {@inheritdoc}
-     */
-    public function load(mixed $resource, string $type = null): RouteCollection
+    public function load($resource, $type = null)
     {
         return $this->routes;
     }
 
-    /**
-     * {@inheritdoc}
-     */
-    public function supports(mixed $resource, string $type = null): bool
+    public function supports($resource, $type = null)
     {
-        return $type === 'jwkset';
+        return 'jwkset' === $type;
     }
 
-    public function getResolver(): LoaderResolverInterface
+    public function getResolver()
     {
-        return $this->resolver;
     }
 
-    public function setResolver(LoaderResolverInterface $resolver): void
+    public function setResolver(LoaderResolverInterface $resolver)
     {
-        $this->resolver = $resolver;
     }
 }

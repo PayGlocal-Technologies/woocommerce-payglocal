@@ -2,10 +2,16 @@
 
 declare(strict_types=1);
 
-namespace Jose\Component\Checker;
+/*
+ * The MIT License (MIT)
+ *
+ * Copyright (c) 2014-2018 Spomky-Labs
+ *
+ * This software may be modified and distributed under the terms
+ * of the MIT license.  See the LICENSE file for details.
+ */
 
-use function array_key_exists;
-use function count;
+namespace Jose\Component\Checker;
 
 /**
  * This manager handles as many claim checkers as needed.
@@ -15,16 +21,42 @@ class ClaimCheckerManager
     /**
      * @var ClaimChecker[]
      */
-    private array $checkers = [];
+    private $checkers = [];
 
     /**
+     * ClaimCheckerManager constructor.
+     *
      * @param ClaimChecker[] $checkers
      */
-    public function __construct(array $checkers)
+    private function __construct(array $checkers)
     {
         foreach ($checkers as $checker) {
             $this->add($checker);
         }
+    }
+
+    /**
+     * This method creates the ClaimCheckerManager.
+     * The argument is a list of claim checkers objects.
+     *
+     * @param ClaimChecker[] $checkers
+     *
+     * @return ClaimCheckerManager
+     */
+    public static function create(array $checkers): self
+    {
+        return new self($checkers);
+    }
+
+    /**
+     * @return ClaimCheckerManager
+     */
+    private function add(ClaimChecker $checker): self
+    {
+        $claim = $checker->supportedClaim();
+        $this->checkers[$claim] = $checker;
+
+        return $this;
     }
 
     /**
@@ -38,20 +70,24 @@ class ClaimCheckerManager
     }
 
     /**
-     * This method checks all the claims passed as argument. All claims are checked against the claim checkers. If one
-     * fails, the InvalidClaimException is thrown.
+     * This method checks all the claims passed as argument.
+     * All claims are checked against the claim checkers.
+     * If one fails, the InvalidClaimException is thrown.
      *
-     * This method returns an array with all checked claims. It is up to the implementor to decide use the claims that
-     * have not been checked.
+     * This method returns an array with all checked claims.
+     * It is up to the implementor to decide use the claims that have not been checked.
      *
      * @param string[] $mandatoryClaims
+     *
+     * @throws InvalidClaimException
+     * @throws MissingMandatoryClaimException
      */
     public function check(array $claims, array $mandatoryClaims = []): array
     {
         $this->checkMandatoryClaims($mandatoryClaims, $claims);
         $checkedClaims = [];
         foreach ($this->checkers as $claim => $checker) {
-            if (array_key_exists($claim, $claims)) {
+            if (\array_key_exists($claim, $claims)) {
                 $checker->checkClaim($claims[$claim]);
                 $checkedClaims[$claim] = $claims[$claim];
             }
@@ -60,26 +96,20 @@ class ClaimCheckerManager
         return $checkedClaims;
     }
 
-    private function add(ClaimChecker $checker): void
-    {
-        $claim = $checker->supportedClaim();
-        $this->checkers[$claim] = $checker;
-    }
-
     /**
      * @param string[] $mandatoryClaims
+     *
+     * @throws MissingMandatoryClaimException
      */
-    private function checkMandatoryClaims(array $mandatoryClaims, array $claims): void
+    private function checkMandatoryClaims(array $mandatoryClaims, array $claims)
     {
-        if (count($mandatoryClaims) === 0) {
+        if (empty($mandatoryClaims)) {
             return;
         }
-        $diff = array_keys(array_diff_key(array_flip($mandatoryClaims), $claims));
-        if (count($diff) !== 0) {
-            throw new MissingMandatoryClaimException(sprintf(
-                'The following claims are mandatory: %s.',
-                implode(', ', $diff)
-            ), $diff);
+        $diff = \array_keys(\array_diff_key(\array_flip($mandatoryClaims), $claims));
+
+        if (!empty($diff)) {
+            throw new MissingMandatoryClaimException(\sprintf('The following claims are mandatory: %s.', \implode(', ', $diff)), $diff);
         }
     }
 }

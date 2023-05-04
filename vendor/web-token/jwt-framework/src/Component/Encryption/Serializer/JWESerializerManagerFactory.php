@@ -2,16 +2,23 @@
 
 declare(strict_types=1);
 
-namespace Jose\Component\Encryption\Serializer;
+/*
+ * The MIT License (MIT)
+ *
+ * Copyright (c) 2014-2018 Spomky-Labs
+ *
+ * This software may be modified and distributed under the terms
+ * of the MIT license.  See the LICENSE file for details.
+ */
 
-use InvalidArgumentException;
+namespace Jose\Component\Encryption\Serializer;
 
 class JWESerializerManagerFactory
 {
     /**
      * @var JWESerializer[]
      */
-    private array $serializers = [];
+    private $serializers = [];
 
     /**
      * Creates a serializer manager factory using the given serializers.
@@ -22,13 +29,13 @@ class JWESerializerManagerFactory
     {
         $serializers = [];
         foreach ($names as $name) {
-            if (! isset($this->serializers[$name])) {
-                throw new InvalidArgumentException(sprintf('Unsupported serializer "%s".', $name));
+            if (!\array_key_exists($name, $this->serializers)) {
+                throw new \InvalidArgumentException(\sprintf('Unsupported serializer "%s".', $name));
             }
             $serializers[] = $this->serializers[$name];
         }
 
-        return new JWESerializerManager($serializers);
+        return JWESerializerManager::create($serializers);
     }
 
     /**
@@ -38,7 +45,7 @@ class JWESerializerManagerFactory
      */
     public function names(): array
     {
-        return array_keys($this->serializers);
+        return \array_keys($this->serializers);
     }
 
     /**
@@ -53,9 +60,13 @@ class JWESerializerManagerFactory
 
     /**
      * Adds a serializer to the manager.
+     *
+     * @return JWESerializerManagerFactory
      */
-    public function add(JWESerializer $serializer): void
+    public function add(JWESerializer $serializer): self
     {
         $this->serializers[$serializer->name()] = $serializer;
+
+        return $this;
     }
 }

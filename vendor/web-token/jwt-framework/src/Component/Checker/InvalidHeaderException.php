@@ -2,21 +2,41 @@
 
 declare(strict_types=1);
 
-namespace Jose\Component\Checker;
+/*
+ * The MIT License (MIT)
+ *
+ * Copyright (c) 2014-2018 Spomky-Labs
+ *
+ * This software may be modified and distributed under the terms
+ * of the MIT license.  See the LICENSE file for details.
+ */
 
-use Exception;
+namespace Jose\Component\Checker;
 
 /**
  * This exception is thrown by header parameter checkers when a header parameter check failed.
  */
-class InvalidHeaderException extends Exception
+class InvalidHeaderException extends \Exception
 {
-    public function __construct(
-        string $message,
-        private readonly string $header,
-        private readonly mixed $value
-    ) {
+    /**
+     * @var string
+     */
+    private $header;
+
+    /**
+     * @var mixed
+     */
+    private $value;
+
+    /**
+     * InvalidHeaderException constructor.
+     */
+    public function __construct(string $message, string $header, $value)
+    {
         parent::__construct($message);
+
+        $this->header = $header;
+        $this->value = $value;
     }
 
     /**
@@ -30,7 +50,7 @@ class InvalidHeaderException extends Exception
     /**
      * Returns the header parameter value that caused the exception.
      */
-    public function getValue(): mixed
+    public function getValue()
     {
         return $this->value;
     }

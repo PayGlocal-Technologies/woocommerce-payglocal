@@ -2,14 +2,19 @@
 
 declare(strict_types=1);
 
+/*
+ * The MIT License (MIT)
+ *
+ * Copyright (c) 2014-2018 Spomky-Labs
+ *
+ * This software may be modified and distributed under the terms
+ * of the MIT license.  See the LICENSE file for details.
+ */
+
 namespace Jose\Component\Encryption\Algorithm\KeyEncryption;
 
-use AESKW\Wrapper as WrapperInterface;
-use function in_array;
-use InvalidArgumentException;
-use function is_string;
+use Base64Url\Base64Url;
 use Jose\Component\Core\JWK;
-use ParagonIE\ConstantTime\Base64UrlSafe;
 
 abstract class AESKW implements KeyWrapping
 {
@@ -20,18 +25,18 @@ abstract class AESKW implements KeyWrapping
 
     public function wrapKey(JWK $key, string $cek, array $completeHeader, array &$additionalHeader): string
     {
-        $k = $this->getKey($key);
+        $this->checkKey($key);
         $wrapper = $this->getWrapper();
 
-        return $wrapper::wrap($k, $cek);
+        return $wrapper::wrap(Base64Url::decode($key->get('k')), $cek);
     }
 
     public function unwrapKey(JWK $key, string $encrypted_cek, array $completeHeader): string
     {
-        $k = $this->getKey($key);
+        $this->checkKey($key);
         $wrapper = $this->getWrapper();
 
-        return $wrapper::unwrap($k, $encrypted_cek);
+        return $wrapper::unwrap(Base64Url::decode($key->get('k')), $encrypted_cek);
     }
 
     public function getKeyManagementMode(): string
@@ -39,21 +44,18 @@ abstract class AESKW implements KeyWrapping
         return self::MODE_WRAP;
     }
 
-    abstract protected function getWrapper(): WrapperInterface;
-
-    private function getKey(JWK $key): string
+    protected function checkKey(JWK $key)
     {
-        if (! in_array($key->get('kty'), $this->allowedKeyTypes(), true)) {
-            throw new InvalidArgumentException('Wrong key type.');
+        if (!\in_array($key->get('kty'), $this->allowedKeyTypes(), true)) {
+            throw new \InvalidArgumentException('Wrong key type.');
         }
-        if (! $key->has('k')) {
-            throw new InvalidArgumentException('The key parameter "k" is missing.');
+        if (!$key->has('k')) {
+            throw new \InvalidArgumentException('The key parameter "k" is missing.');
         }
-        $k = $key->get('k');
-        if (! is_string($k)) {
-            throw new InvalidArgumentException('The key parameter "k" is invalid.');
-        }
-
-        return Base64UrlSafe::decode($k);
     }
+
+    /**
+     * @return \AESKW\A128KW|\AESKW\A192KW|\AESKW\A256KW
+     */
+    abstract protected function getWrapper();
 }

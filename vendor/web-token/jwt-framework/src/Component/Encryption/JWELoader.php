@@ -2,22 +2,47 @@
 
 declare(strict_types=1);
 
+/*
+ * The MIT License (MIT)
+ *
+ * Copyright (c) 2014-2018 Spomky-Labs
+ *
+ * This software may be modified and distributed under the terms
+ * of the MIT license.  See the LICENSE file for details.
+ */
+
 namespace Jose\Component\Encryption;
 
 use Jose\Component\Checker\HeaderCheckerManager;
 use Jose\Component\Core\JWK;
 use Jose\Component\Core\JWKSet;
 use Jose\Component\Encryption\Serializer\JWESerializerManager;
-use RuntimeException;
-use Throwable;
 
 class JWELoader
 {
-    public function __construct(
-        private readonly JWESerializerManager $serializerManager,
-        private readonly JWEDecrypter $jweDecrypter,
-        private readonly ?HeaderCheckerManager $headerCheckerManager
-    ) {
+    /**
+     * @var JWEDecrypter
+     */
+    private $jweDecrypter;
+
+    /**
+     * @var HeaderCheckerManager|null
+     */
+    private $headerCheckerManager;
+
+    /**
+     * @var JWESerializerManager
+     */
+    private $serializerManager;
+
+    /**
+     * JWELoader constructor.
+     */
+    public function __construct(JWESerializerManager $serializerManager, JWEDecrypter $jweDecrypter, ?HeaderCheckerManager $headerCheckerManager)
+    {
+        $this->serializerManager = $serializerManager;
+        $this->jweDecrypter = $jweDecrypter;
+        $this->headerCheckerManager = $headerCheckerManager;
     }
 
     /**
@@ -45,19 +70,23 @@ class JWELoader
     }
 
     /**
-     * This method will try to load and decrypt the given token using a JWK. If succeeded, the methods will populate the
-     * $recipient variable and returns the JWE.
+     * This method will try to load and decrypt the given token using a JWK.
+     * If succeeded, the methods will populate the $recipient variable and returns the JWE.
+     *
+     * @throws \Exception
      */
     public function loadAndDecryptWithKey(string $token, JWK $key, ?int &$recipient): JWE
     {
-        $keyset = new JWKSet([$key]);
+        $keyset = JWKSet::createFromKeys([$key]);
 
         return $this->loadAndDecryptWithKeySet($token, $keyset, $recipient);
     }
 
     /**
-     * This method will try to load and decrypt the given token using a JWKSet. If succeeded, the methods will populate
-     * the $recipient variable and returns the JWE.
+     * This method will try to load and decrypt the given token using a JWKSet.
+     * If succeeded, the methods will populate the $recipient variable and returns the JWE.
+     *
+     * @throws \Exception
      */
     public function loadAndDecryptWithKeySet(string $token, JWKSet $keyset, ?int &$recipient): JWE
     {
@@ -71,22 +100,22 @@ class JWELoader
                     return $jwe;
                 }
             }
-        } catch (Throwable) {
+        } catch (\Exception $e) {
             // Nothing to do. Exception thrown just after
         }
 
-        throw new RuntimeException('Unable to load and decrypt the token.');
+        throw new \Exception('Unable to load and decrypt the token.');
     }
 
     private function processRecipient(JWE &$jwe, JWKSet $keyset, int $recipient): bool
     {
         try {
-            if ($this->headerCheckerManager !== null) {
+            if (null !== $this->headerCheckerManager) {
                 $this->headerCheckerManager->check($jwe, $recipient);
             }
 
             return $this->jweDecrypter->decryptUsingKeySet($jwe, $keyset, $recipient);
-        } catch (Throwable) {
+        } catch (\Exception $e) {
             return false;
         }
     }

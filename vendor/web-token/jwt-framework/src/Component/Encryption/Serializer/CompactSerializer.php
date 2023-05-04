@@ -2,21 +2,38 @@
 
 declare(strict_types=1);
 
+/*
+ * The MIT License (MIT)
+ *
+ * Copyright (c) 2014-2018 Spomky-Labs
+ *
+ * This software may be modified and distributed under the terms
+ * of the MIT license.  See the LICENSE file for details.
+ */
+
 namespace Jose\Component\Encryption\Serializer;
 
-use function count;
-use InvalidArgumentException;
-use function is_array;
-use Jose\Component\Core\Util\JsonConverter;
+use Base64Url\Base64Url;
+use Jose\Component\Core\Converter\JsonConverter;
 use Jose\Component\Encryption\JWE;
 use Jose\Component\Encryption\Recipient;
-use LogicException;
-use ParagonIE\ConstantTime\Base64UrlSafe;
-use Throwable;
 
 final class CompactSerializer implements JWESerializer
 {
     public const NAME = 'jwe_compact';
+
+    /**
+     * @var JsonConverter
+     */
+    private $jsonConverter;
+
+    /**
+     * JSONFlattenedSerializer constructor.
+     */
+    public function __construct(JsonConverter $jsonConverter)
+    {
+        $this->jsonConverter = $jsonConverter;
+    }
 
     public function displayName(): string
     {
@@ -30,7 +47,7 @@ final class CompactSerializer implements JWESerializer
 
     public function serialize(JWE $jwe, ?int $recipientIndex = null): string
     {
-        if ($recipientIndex === null) {
+        if (null === $recipientIndex) {
             $recipientIndex = 0;
         }
         $recipient = $jwe->getRecipient($recipientIndex);
@@ -39,35 +56,32 @@ final class CompactSerializer implements JWESerializer
         $this->checkHasSharedProtectedHeader($jwe);
         $this->checkRecipientHasNoHeader($jwe, $recipientIndex);
 
-        return sprintf(
+        return \sprintf(
             '%s.%s.%s.%s.%s',
             $jwe->getEncodedSharedProtectedHeader(),
-            Base64UrlSafe::encodeUnpadded($recipient->getEncryptedKey() ?? ''),
-            Base64UrlSafe::encodeUnpadded($jwe->getIV() ?? ''),
-            Base64UrlSafe::encodeUnpadded($jwe->getCiphertext() ?? ''),
-            Base64UrlSafe::encodeUnpadded($jwe->getTag() ?? '')
+            Base64Url::encode(null === $recipient->getEncryptedKey() ? '' : $recipient->getEncryptedKey()),
+            Base64Url::encode(null === $jwe->getIV() ? '' : $jwe->getIV()),
+            Base64Url::encode($jwe->getCiphertext()),
+            Base64Url::encode(null === $jwe->getTag() ? '' : $jwe->getTag())
         );
     }
 
     public function unserialize(string $input): JWE
     {
-        $parts = explode('.', $input);
-        if (count($parts) !== 5) {
-            throw new InvalidArgumentException('Unsupported input');
+        $parts = \explode('.', $input);
+        if (5 !== \count($parts)) {
+            throw new \InvalidArgumentException('Unsupported input');
         }
 
         try {
             $encodedSharedProtectedHeader = $parts[0];
-            $sharedProtectedHeader = JsonConverter::decode(Base64UrlSafe::decode($encodedSharedProtectedHeader));
-            if (! is_array($sharedProtectedHeader)) {
-                throw new InvalidArgumentException('Unsupported input.');
-            }
-            $encryptedKey = $parts[1] === '' ? null : Base64UrlSafe::decode($parts[1]);
-            $iv = Base64UrlSafe::decode($parts[2]);
-            $ciphertext = Base64UrlSafe::decode($parts[3]);
-            $tag = Base64UrlSafe::decode($parts[4]);
+            $sharedProtectedHeader = $this->jsonConverter->decode(Base64Url::decode($encodedSharedProtectedHeader));
+            $encryptedKey = empty($parts[1]) ? null : Base64Url::decode($parts[1]);
+            $iv = Base64Url::decode($parts[2]);
+            $ciphertext = Base64Url::decode($parts[3]);
+            $tag = Base64Url::decode($parts[4]);
 
-            return new JWE(
+            return JWE::create(
                 $ciphertext,
                 $iv,
                 $tag,
@@ -75,35 +89,30 @@ final class CompactSerializer implements JWESerializer
                 [],
                 $sharedProtectedHeader,
                 $encodedSharedProtectedHeader,
-                [new Recipient([], $encryptedKey)]
-            );
-        } catch (Throwable $throwable) {
-            throw new InvalidArgumentException('Unsupported input', $throwable->getCode(), $throwable);
+                [Recipient::create([], $encryptedKey)]);
+        } catch (\Error | \Exception $e) {
+            throw new \InvalidArgumentException('Unsupported input');
         }
     }
 
-    private function checkHasNoAAD(JWE $jwe): void
+    private function checkHasNoAAD(JWE $jwe)
     {
-        if ($jwe->getAAD() !== null) {
-            throw new LogicException('This JWE has AAD and cannot be converted into Compact JSON.');
+        if (!empty($jwe->getAAD())) {
+            throw new \LogicException('This JWE has AAD and cannot be converted into Compact JSON.');
         }
     }
 
-    private function checkRecipientHasNoHeader(JWE $jwe, int $id): void
+    private function checkRecipientHasNoHeader(JWE $jwe, int $id)
     {
-        if (count($jwe->getSharedHeader()) !== 0 || count($jwe->getRecipient($id)->getHeader()) !== 0) {
-            throw new LogicException(
-                'This JWE has shared header parameters or recipient header parameters and cannot be converted into Compact JSON.'
-            );
+        if (!empty($jwe->getSharedHeader()) || !empty($jwe->getRecipient($id)->getHeader())) {
+            throw new \LogicException('This JWE has shared header parameters or recipient header parameters and cannot be converted into Compact JSON.');
         }
     }
 
-    private function checkHasSharedProtectedHeader(JWE $jwe): void
+    private function checkHasSharedProtectedHeader(JWE $jwe)
     {
-        if (count($jwe->getSharedProtectedHeader()) === 0) {
-            throw new LogicException(
-                'This JWE does not have shared protected header parameters and cannot be converted into Compact JSON.'
-            );
+        if (empty($jwe->getSharedProtectedHeader())) {
+            throw new \LogicException('This JWE does not have shared protected header parameters and cannot be converted into Compact JSON.');
         }
     }
 }

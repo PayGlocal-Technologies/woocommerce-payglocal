@@ -2,6 +2,15 @@
 
 declare(strict_types=1);
 
+/*
+ * The MIT License (MIT)
+ *
+ * Copyright (c) 2014-2018 Spomky-Labs
+ *
+ * This software may be modified and distributed under the terms
+ * of the MIT license.  See the LICENSE file for details.
+ */
+
 namespace Jose\Bundle\JoseFramework\DependencyInjection\Source\Signature;
 
 use Jose\Bundle\JoseFramework\DependencyInjection\Source\Source;
@@ -19,26 +28,24 @@ class JWSSerializer implements Source
         return 'serializers';
     }
 
-    public function load(array $configs, ContainerBuilder $container): void
+    public function load(array $configs, ContainerBuilder $container)
     {
         foreach ($configs[$this->name()] as $name => $itemConfig) {
-            $service_id = sprintf('jose.jws_serializer.%s', $name);
+            $service_id = \sprintf('jose.jws_serializer.%s', $name);
             $definition = new Definition(JWSSerializerManager::class);
             $definition
                 ->setFactory([new Reference(JWSSerializerManagerFactory::class), 'create'])
                 ->setArguments([$itemConfig['serializers']])
                 ->addTag('jose.jws_serializer_manager')
-                ->setPublic($itemConfig['is_public'])
-            ;
+                ->setPublic($itemConfig['is_public']);
             foreach ($itemConfig['tags'] as $id => $attributes) {
                 $definition->addTag($id, $attributes);
             }
             $container->setDefinition($service_id, $definition);
-            $container->registerAliasForArgument($service_id, JWSSerializerManager::class, $name . 'JwsSerializer');
         }
     }
 
-    public function getNodeDefinition(NodeDefinition $node): void
+    public function getNodeDefinition(NodeDefinition $node)
     {
         $node->children()
             ->arrayNode($this->name())
@@ -54,8 +61,7 @@ class JWSSerializer implements Source
             ->arrayNode('serializers')
             ->info('A list of JWS serializers aliases.')
             ->isRequired()
-            ->scalarPrototype()
-            ->end()
+            ->scalarPrototype()->end()
             ->treatNullLike([])
             ->treatFalseLike([])
             ->requiresAtLeastOneElement()
@@ -65,14 +71,12 @@ class JWSSerializer implements Source
             ->useAttributeAsKey('name')
             ->treatNullLike([])
             ->treatFalseLike([])
-            ->variablePrototype()
+            ->variablePrototype()->end()
             ->end()
             ->end()
             ->end()
             ->end()
-            ->end()
-            ->end()
-        ;
+            ->end();
     }
 
     public function prepend(ContainerBuilder $container, array $config): array

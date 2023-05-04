@@ -2,30 +2,26 @@
 
 declare(strict_types=1);
 
-namespace Jose\Component\Signature\Algorithm;
+/*
+ * The MIT License (MIT)
+ *
+ * Copyright (c) 2014-2018 Spomky-Labs
+ *
+ * This software may be modified and distributed under the terms
+ * of the MIT license.  See the LICENSE file for details.
+ */
 
-use InvalidArgumentException;
-use Jose\Component\Core\JWK;
+namespace Jose\Component\Signature\Algorithm;
 
 final class HS256 extends HMAC
 {
-    public function name(): string
-    {
-        return 'HS256';
-    }
-
     protected function getHashAlgorithm(): string
     {
         return 'sha256';
     }
 
-    protected function getKey(JWK $key): string
+    public function name(): string
     {
-        $k = parent::getKey($key);
-        if (mb_strlen($k, '8bit') < 32) {
-            throw new InvalidArgumentException('Invalid key length.');
-        }
-
-        return $k;
+        return 'HS256';
     }
 }

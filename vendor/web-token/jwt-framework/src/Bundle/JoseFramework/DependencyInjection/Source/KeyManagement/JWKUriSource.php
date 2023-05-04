@@ -2,6 +2,15 @@
 
 declare(strict_types=1);
 
+/*
+ * The MIT License (MIT)
+ *
+ * Copyright (c) 2014-2018 Spomky-Labs
+ *
+ * This software may be modified and distributed under the terms
+ * of the MIT license.  See the LICENSE file for details.
+ */
+
 namespace Jose\Bundle\JoseFramework\DependencyInjection\Source\KeyManagement;
 
 use Jose\Bundle\JoseFramework\Controller\JWKSetController;
@@ -19,29 +28,27 @@ class JWKUriSource implements Source
         return 'jwk_uris';
     }
 
-    public function load(array $configs, ContainerBuilder $container): void
+    public function load(array $configs, ContainerBuilder $container)
     {
         foreach ($configs[$this->name()] as $name => $itemConfig) {
-            $service_id = sprintf('jose.controller.%s', $name);
+            $service_id = \sprintf('jose.controller.%s', $name);
             $definition = new Definition(JWKSetController::class);
             $definition->setFactory([new Reference(JWKSetControllerFactory::class), 'create']);
-            $definition->setArguments([new Reference($itemConfig['id'])]);
-            $definition->addTag('jose.jwk_uri.controller', [
-                'path' => $itemConfig['path'],
-            ]);
+            $definition->setArguments([new Reference($itemConfig['id']), $itemConfig['max_age']]);
+            $definition->addTag('jose.jwk_uri.controller', ['path' => $itemConfig['path']]);
             $definition->addTag('controller.service_arguments');
             $definition->setPublic($itemConfig['is_public']);
             foreach ($itemConfig['tags'] as $id => $attributes) {
                 $definition->addTag($id, $attributes);
             }
             $container->setDefinition($service_id, $definition);
-            $container->registerAliasForArgument($service_id, JWKSetController::class, $name . 'JwkSetController');
         }
     }
 
-    public function getNodeDefinition(NodeDefinition $node): void
+    public function getNodeDefinition(NodeDefinition $node)
     {
-        $node->children()
+        $node
+            ->children()
             ->arrayNode('jwk_uris')
             ->treatFalseLike([])
             ->treatNullLike([])
@@ -56,13 +63,17 @@ class JWKUriSource implements Source
             ->info('To share the JWKSet, then set a valid path (e.g. "/jwkset.json").')
             ->isRequired()
             ->end()
+            ->integerNode('max_age')
+            ->info('When share, this value indicates how many seconds the HTTP client should keep the key in cache. Default is 21600 = 6 hours.')
+            ->defaultValue(21600)
+            ->setDeprecated()
+            ->end()
             ->arrayNode('tags')
             ->info('A list of tags to be associated to the service.')
             ->useAttributeAsKey('name')
             ->treatNullLike([])
             ->treatFalseLike([])
-            ->variablePrototype()
-            ->end()
+            ->variablePrototype()->end()
             ->end()
             ->booleanNode('is_public')
             ->info('If true, the service will be public, else private.')
@@ -71,8 +82,7 @@ class JWKUriSource implements Source
             ->end()
             ->end()
             ->end()
-            ->end()
-        ;
+            ->end();
     }
 
     public function prepend(ContainerBuilder $container, array $config): array

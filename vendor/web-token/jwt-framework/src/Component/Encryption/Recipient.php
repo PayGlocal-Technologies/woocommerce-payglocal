@@ -2,20 +2,50 @@
 
 declare(strict_types=1);
 
-namespace Jose\Component\Encryption;
+/*
+ * The MIT License (MIT)
+ *
+ * Copyright (c) 2014-2018 Spomky-Labs
+ *
+ * This software may be modified and distributed under the terms
+ * of the MIT license.  See the LICENSE file for details.
+ */
 
-use function array_key_exists;
-use InvalidArgumentException;
+namespace Jose\Component\Encryption;
 
 /**
  * @internal
  */
-final class Recipient
+class Recipient
 {
-    public function __construct(
-        private readonly array $header,
-        private readonly ?string $encryptedKey
-    ) {
+    /**
+     * @var array
+     */
+    private $header = [];
+
+    /**
+     * @var null|string
+     */
+    private $encryptedKey = null;
+
+    /**
+     * Recipient constructor.
+     */
+    private function __construct(array $header, ?string $encryptedKey)
+    {
+        $this->header = $header;
+        $this->encryptedKey = $encryptedKey;
+    }
+
+    /**
+     * Creates a recipient.
+     * The creation of this object is meant to be used by the library, not by third party applications.
+     *
+     * @return Recipient
+     */
+    public static function create(array $header, ?string $encryptedKey): self
+    {
+        return new self($header, $encryptedKey);
     }
 
     /**
@@ -35,11 +65,11 @@ final class Recipient
      */
     public function getHeaderParameter(string $key)
     {
-        if (! $this->hasHeaderParameter($key)) {
-            throw new InvalidArgumentException(sprintf('The header "%s" does not exist.', $key));
+        if ($this->hasHeaderParameter($key)) {
+            return $this->header[$key];
         }
 
-        return $this->header[$key];
+        throw new \InvalidArgumentException(\sprintf('The header "%s" does not exist.', $key));
     }
 
     /**
@@ -49,7 +79,7 @@ final class Recipient
      */
     public function hasHeaderParameter(string $key): bool
     {
-        return array_key_exists($key, $this->header);
+        return \array_key_exists($key, $this->header);
     }
 
     /**

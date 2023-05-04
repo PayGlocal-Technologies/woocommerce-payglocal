@@ -2,20 +2,27 @@
 
 declare(strict_types=1);
 
-namespace Jose\Component\Checker;
+/*
+ * The MIT License (MIT)
+ *
+ * Copyright (c) 2014-2018 Spomky-Labs
+ *
+ * This software may be modified and distributed under the terms
+ * of the MIT license.  See the LICENSE file for details.
+ */
 
-use InvalidArgumentException;
+namespace Jose\Component\Checker;
 
 class ClaimCheckerManagerFactory
 {
     /**
      * @var ClaimChecker[]
      */
-    private array $checkers = [];
+    private $checkers = [];
 
     /**
-     * This method creates a Claim Checker Manager and populate it with the claim checkers found based on the alias. If
-     * the alias is not supported, an InvalidArgumentException is thrown.
+     * This method creates a Claim Checker Manager and populate it with the claim checkers found based on the alias.
+     * If the alias is not supported, an InvalidArgumentException is thrown.
      *
      * @param string[] $aliases
      */
@@ -23,24 +30,26 @@ class ClaimCheckerManagerFactory
     {
         $checkers = [];
         foreach ($aliases as $alias) {
-            if (! isset($this->checkers[$alias])) {
-                throw new InvalidArgumentException(sprintf(
-                    'The claim checker with the alias "%s" is not supported.',
-                    $alias
-                ));
+            if (\array_key_exists($alias, $this->checkers)) {
+                $checkers[] = $this->checkers[$alias];
+            } else {
+                throw new \InvalidArgumentException(\sprintf('The claim checker with the alias "%s" is not supported.', $alias));
             }
-            $checkers[] = $this->checkers[$alias];
         }
 
-        return new ClaimCheckerManager($checkers);
+        return ClaimCheckerManager::create($checkers);
     }
 
     /**
      * This method adds a claim checker to this factory.
+     *
+     * @return ClaimCheckerManagerFactory
      */
-    public function add(string $alias, ClaimChecker $checker): void
+    public function add(string $alias, ClaimChecker $checker): self
     {
         $this->checkers[$alias] = $checker;
+
+        return $this;
     }
 
     /**
@@ -50,7 +59,7 @@ class ClaimCheckerManagerFactory
      */
     public function aliases(): array
     {
-        return array_keys($this->checkers);
+        return \array_keys($this->checkers);
     }
 
     /**

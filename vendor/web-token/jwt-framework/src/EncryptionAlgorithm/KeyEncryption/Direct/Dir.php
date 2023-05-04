@@ -2,30 +2,32 @@
 
 declare(strict_types=1);
 
+/*
+ * The MIT License (MIT)
+ *
+ * Copyright (c) 2014-2018 Spomky-Labs
+ *
+ * This software may be modified and distributed under the terms
+ * of the MIT license.  See the LICENSE file for details.
+ */
+
 namespace Jose\Component\Encryption\Algorithm\KeyEncryption;
 
-use function in_array;
-use InvalidArgumentException;
-use function is_string;
+use Base64Url\Base64Url;
 use Jose\Component\Core\JWK;
-use ParagonIE\ConstantTime\Base64UrlSafe;
 
 final class Dir implements DirectEncryption
 {
     public function getCEK(JWK $key): string
     {
-        if (! in_array($key->get('kty'), $this->allowedKeyTypes(), true)) {
-            throw new InvalidArgumentException('Wrong key type.');
+        if ('oct' !== $key->get('kty')) {
+            throw new \InvalidArgumentException('Wrong key type.');
         }
-        if (! $key->has('k')) {
-            throw new InvalidArgumentException('The key parameter "k" is missing.');
-        }
-        $k = $key->get('k');
-        if (! is_string($k)) {
-            throw new InvalidArgumentException('The key parameter "k" is invalid.');
+        if (!$key->has('k')) {
+            throw new \InvalidArgumentException('The key parameter "k" is missing.');
         }
 
-        return Base64UrlSafe::decode($k);
+        return Base64Url::decode($key->get('k'));
     }
 
     public function name(): string

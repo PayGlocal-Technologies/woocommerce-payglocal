@@ -2,23 +2,46 @@
 
 declare(strict_types=1);
 
-namespace Jose\Component\Core;
+/*
+ * The MIT License (MIT)
+ *
+ * Copyright (c) 2014-2018 Spomky-Labs
+ *
+ * This software may be modified and distributed under the terms
+ * of the MIT license.  See the LICENSE file for details.
+ */
 
-use function array_key_exists;
-use InvalidArgumentException;
+namespace Jose\Component\Core;
 
 class AlgorithmManager
 {
-    private array $algorithms = [];
+    /**
+     * @var array
+     */
+    private $algorithms = [];
 
     /**
+     * AlgorithmManager constructor.
+     *
      * @param Algorithm[] $algorithms
      */
-    public function __construct(array $algorithms)
+    private function __construct(array $algorithms)
     {
         foreach ($algorithms as $algorithm) {
             $this->add($algorithm);
         }
+    }
+
+    /**
+     * This method creates an alogithm manager using the given algorithms.
+     *
+     * @param Algorithm[] $algorithms
+     *
+     * @return AlgorithmManager
+     */
+    public static function create(array $algorithms): self
+    {
+        return new self($algorithms);
     }
 
     /**
@@ -28,7 +51,7 @@ class AlgorithmManager
      */
     public function has(string $algorithm): bool
     {
-        return array_key_exists($algorithm, $this->algorithms);
+        return \array_key_exists($algorithm, $this->algorithms);
     }
 
     /**
@@ -38,7 +61,7 @@ class AlgorithmManager
      */
     public function list(): array
     {
-        return array_keys($this->algorithms);
+        return \array_keys($this->algorithms);
     }
 
     /**
@@ -48,8 +71,8 @@ class AlgorithmManager
      */
     public function get(string $algorithm): Algorithm
     {
-        if (! $this->has($algorithm)) {
-            throw new InvalidArgumentException(sprintf('The algorithm "%s" is not supported.', $algorithm));
+        if (!$this->has($algorithm)) {
+            throw new \InvalidArgumentException(\sprintf('The algorithm "%s" is not supported.', $algorithm));
         }
 
         return $this->algorithms[$algorithm];
@@ -57,10 +80,14 @@ class AlgorithmManager
 
     /**
      * Adds an algorithm to the manager.
+     *
+     * @return AlgorithmManager
      */
-    public function add(Algorithm $algorithm): void
+    private function add(Algorithm $algorithm): self
     {
         $name = $algorithm->name();
         $this->algorithms[$name] = $algorithm;
+
+        return $this;
     }
 }

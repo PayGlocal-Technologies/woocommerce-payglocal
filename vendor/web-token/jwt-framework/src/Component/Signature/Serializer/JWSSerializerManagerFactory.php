@@ -2,16 +2,23 @@
 
 declare(strict_types=1);
 
-namespace Jose\Component\Signature\Serializer;
+/*
+ * The MIT License (MIT)
+ *
+ * Copyright (c) 2014-2018 Spomky-Labs
+ *
+ * This software may be modified and distributed under the terms
+ * of the MIT license.  See the LICENSE file for details.
+ */
 
-use InvalidArgumentException;
+namespace Jose\Component\Signature\Serializer;
 
 class JWSSerializerManagerFactory
 {
     /**
      * @var JWSSerializer[]
      */
-    private array $serializers = [];
+    private $serializers = [];
 
     /**
      * @param string[] $names
@@ -20,13 +27,13 @@ class JWSSerializerManagerFactory
     {
         $serializers = [];
         foreach ($names as $name) {
-            if (! isset($this->serializers[$name])) {
-                throw new InvalidArgumentException(sprintf('Unsupported serializer "%s".', $name));
+            if (!\array_key_exists($name, $this->serializers)) {
+                throw new \InvalidArgumentException(\sprintf('Unsupported serialiser "%s".', $name));
             }
             $serializers[] = $this->serializers[$name];
         }
 
-        return new JWSSerializerManager($serializers);
+        return JWSSerializerManager::create($serializers);
     }
 
     /**
@@ -34,7 +41,7 @@ class JWSSerializerManagerFactory
      */
     public function names(): array
     {
-        return array_keys($this->serializers);
+        return \array_keys($this->serializers);
     }
 
     /**
@@ -45,8 +52,13 @@ class JWSSerializerManagerFactory
         return $this->serializers;
     }
 
-    public function add(JWSSerializer $serializer): void
+    /**
+     * @return JWSSerializerManagerFactory
+     */
+    public function add(JWSSerializer $serializer): self
     {
         $this->serializers[$serializer->name()] = $serializer;
+
+        return $this;
     }
 }

@@ -2,24 +2,39 @@
 
 declare(strict_types=1);
 
-namespace Jose\Component\Encryption\Compression;
+/*
+ * The MIT License (MIT)
+ *
+ * Copyright (c) 2014-2018 Spomky-Labs
+ *
+ * This software may be modified and distributed under the terms
+ * of the MIT license.  See the LICENSE file for details.
+ */
 
-use InvalidArgumentException;
+namespace Jose\Component\Encryption\Compression;
 
 class CompressionMethodManagerFactory
 {
     /**
      * @var CompressionMethod[]
      */
-    private array $compressionMethods = [];
+    private $compressionMethods = [];
 
     /**
-     * This method adds a compression method to this factory. The method is uniquely identified by an alias. This allows
-     * the same method to be added twice (or more) using several configuration options.
+     * This method adds a compression method to this factory.
+     * The method is uniquely identified by an alias. This allows the same method to be added twice (or more)
+     * using several configuration options.
+     *
+     * @return CompressionMethodManagerFactory
      */
-    public function add(string $alias, CompressionMethod $compressionMethod): void
+    public function add(string $alias, CompressionMethod $compressionMethod): self
     {
+        if (\array_key_exists($alias, $this->compressionMethods)) {
+            throw new \InvalidArgumentException(\sprintf('The alias "%s" already exists.', $alias));
+        }
         $this->compressionMethods[$alias] = $compressionMethod;
+
+        return $this;
     }
 
     /**
@@ -29,7 +44,7 @@ class CompressionMethodManagerFactory
      */
     public function aliases(): array
     {
-        return array_keys($this->compressionMethods);
+        return \array_keys($this->compressionMethods);
     }
 
     /**
@@ -43,8 +58,8 @@ class CompressionMethodManagerFactory
     }
 
     /**
-     * Creates a compression method manager using the compression methods identified by the given aliases. If one of the
-     * aliases does not exist, an exception is thrown.
+     * Creates a compression method manager using the compression methods identified by the given aliases.
+     * If one of the aliases does not exist, an exception is thrown.
      *
      * @param string[] $aliases
      */
@@ -52,15 +67,13 @@ class CompressionMethodManagerFactory
     {
         $compressionMethods = [];
         foreach ($aliases as $alias) {
-            if (! isset($this->compressionMethods[$alias])) {
-                throw new InvalidArgumentException(sprintf(
-                    'The compression method with the alias "%s" is not supported.',
-                    $alias
-                ));
+            if (\array_key_exists($alias, $this->compressionMethods)) {
+                $compressionMethods[] = $this->compressionMethods[$alias];
+            } else {
+                throw new \InvalidArgumentException(\sprintf('The compression method with the alias "%s" is not supported.', $alias));
             }
-            $compressionMethods[] = $this->compressionMethods[$alias];
         }
 
-        return new CompressionMethodManager($compressionMethods);
+        return CompressionMethodManager::create($compressionMethods);
     }
 }

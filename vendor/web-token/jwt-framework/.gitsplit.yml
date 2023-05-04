@@ -11,8 +11,6 @@ splits:
       target: "https://${GH_TOKEN}@github.com/web-token/jwt-key-mgmt.git"
     - prefix: "src/Component/Console"
       target: "https://${GH_TOKEN}@github.com/web-token/jwt-console.git"
-    - prefix: "src/Component/NestedToken"
-      target: "https://${GH_TOKEN}@github.com/web-token/jwt-nested-token.git"
     - prefix: "src/Bundle/JoseFramework"
       target: "https://${GH_TOKEN}@github.com/web-token/jwt-bundle.git"
     - prefix: "src/EncryptionAlgorithm/ContentEncryption/AESCBC"
@@ -47,10 +45,6 @@ splits:
       target: "https://${GH_TOKEN}@github.com/web-token/jwt-encryption-algorithm-experimental.git"
     - prefix: "src/Ecc"
       target: "https://${GH_TOKEN}@github.com/web-token/jwt-util-ecc.git"
-    - prefix: "packs/encryption"
-      target: "https://${GH_TOKEN}@github.com/web-token/encryption-pack.git"
-    - prefix: "packs/signature"
-      target: "https://${GH_TOKEN}@github.com/web-token/signature-pack.git"
 
 origins:
     - ^master$

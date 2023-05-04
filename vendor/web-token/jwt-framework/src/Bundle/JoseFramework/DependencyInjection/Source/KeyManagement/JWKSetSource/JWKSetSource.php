@@ -2,6 +2,15 @@
 
 declare(strict_types=1);
 
+/*
+ * The MIT License (MIT)
+ *
+ * Copyright (c) 2014-2018 Spomky-Labs
+ *
+ * This software may be modified and distributed under the terms
+ * of the MIT license.  See the LICENSE file for details.
+ */
+
 namespace Jose\Bundle\JoseFramework\DependencyInjection\Source\KeyManagement\JWKSetSource;
 
 use Symfony\Component\Config\Definition\Builder\NodeDefinition;
@@ -17,7 +26,7 @@ interface JWKSetSource
      * @param string           $id        The id of the service
      * @param array            $config    An array of configuration
      */
-    public function create(ContainerBuilder $container, string $type, string $id, array $config): void;
+    public function create(ContainerBuilder $container, string $type, string $id, array $config);
 
     /**
      * Returns the key set for the Key Set Source configuration.
@@ -27,5 +36,5 @@ interface JWKSetSource
     /**
      * Adds configuration nodes for this service.
      */
-    public function addConfiguration(NodeDefinition $builder): void;
+    public function addConfiguration(NodeDefinition $builder);
 }

@@ -2,11 +2,20 @@
 
 declare(strict_types=1);
 
+/*
+ * The MIT License (MIT)
+ *
+ * Copyright (c) 2014-2018 Spomky-Labs
+ *
+ * This software may be modified and distributed under the terms
+ * of the MIT license.  See the LICENSE file for details.
+ */
+
 namespace Jose\Bundle\JoseFramework\DependencyInjection\Source\Checker;
 
 use Jose\Bundle\JoseFramework\DependencyInjection\Source\Source;
-use Jose\Bundle\JoseFramework\Services\HeaderCheckerManager;
-use Jose\Bundle\JoseFramework\Services\HeaderCheckerManagerFactory;
+use Jose\Component\Checker\HeaderCheckerManagerFactory;
+use Jose\Component\Signature\JWSVerifier as JWSVerifierService;
 use Symfony\Component\Config\Definition\Builder\NodeDefinition;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Definition;
@@ -19,30 +28,26 @@ class HeaderChecker implements Source
         return 'headers';
     }
 
-    public function load(array $configs, ContainerBuilder $container): void
+    public function load(array $configs, ContainerBuilder $container)
     {
         foreach ($configs[$this->name()] as $name => $itemConfig) {
-            $service_id = sprintf('jose.header_checker.%s', $name);
-            $definition = new Definition(HeaderCheckerManager::class);
+            $service_id = \sprintf('jose.header_checker.%s', $name);
+            $definition = new Definition(JWSVerifierService::class);
             $definition
                 ->setFactory([new Reference(HeaderCheckerManagerFactory::class), 'create'])
-                ->setArguments([$itemConfig['headers']])
+                ->setArguments([
+                    $itemConfig['headers'],
+                ])
                 ->addTag('jose.header_checker_manager')
-                ->setPublic($itemConfig['is_public'])
-            ;
+                ->setPublic($itemConfig['is_public']);
             foreach ($itemConfig['tags'] as $id => $attributes) {
                 $definition->addTag($id, $attributes);
             }
             $container->setDefinition($service_id, $definition);
-            $container->registerAliasForArgument(
-                $service_id,
-                HeaderCheckerManager::class,
-                $name . 'HeaderCheckerManager'
-            );
         }
     }
 
-    public function getNodeDefinition(NodeDefinition $node): void
+    public function getNodeDefinition(NodeDefinition $node)
     {
         $node
             ->children()
@@ -60,8 +65,7 @@ class HeaderChecker implements Source
             ->info('A list of header aliases to be set in the claim checker.')
             ->useAttributeAsKey('name')
             ->isRequired()
-            ->scalarPrototype()
-            ->end()
+            ->scalarPrototype()->end()
             ->end()
             ->arrayNode('tags')
             ->info('A list of tags to be associated to the claim checker.')
@@ -74,8 +78,7 @@ class HeaderChecker implements Source
             ->end()
             ->end()
             ->end()
-            ->end()
-        ;
+            ->end();
     }
 
     public function prepend(ContainerBuilder $container, array $config): array

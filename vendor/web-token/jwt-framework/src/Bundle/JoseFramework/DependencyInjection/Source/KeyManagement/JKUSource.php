@@ -2,6 +2,15 @@
 
 declare(strict_types=1);
 
+/*
+ * The MIT License (MIT)
+ *
+ * Copyright (c) 2014-2018 Spomky-Labs
+ *
+ * This software may be modified and distributed under the terms
+ * of the MIT license.  See the LICENSE file for details.
+ */
+
 namespace Jose\Bundle\JoseFramework\DependencyInjection\Source\KeyManagement;
 
 use Jose\Bundle\JoseFramework\DependencyInjection\Source\Source;
@@ -9,7 +18,7 @@ use Jose\Component\Console\JKULoaderCommand;
 use Symfony\Component\Config\Definition\Builder\NodeDefinition;
 use Symfony\Component\Config\FileLocator;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
-use Symfony\Component\DependencyInjection\Loader\PhpFileLoader;
+use Symfony\Component\DependencyInjection\Loader\YamlFileLoader;
 
 class JKUSource implements Source
 {
@@ -18,20 +27,20 @@ class JKUSource implements Source
         return 'jku_factory';
     }
 
-    public function load(array $configs, ContainerBuilder $container): void
+    public function load(array $configs, ContainerBuilder $container)
     {
-        if ($configs[$this->name()]['enabled'] === true) {
-            $loader = new PhpFileLoader($container, new FileLocator(__DIR__ . '/../../../Resources/config'));
-            $loader->load('jku_source.php');
-            if (class_exists(JKULoaderCommand::class)) {
-                $loader->load('jku_commands.php');
+        if (true === $configs[$this->name()]['enabled']) {
+            $loader = new YamlFileLoader($container, new FileLocator(__DIR__.'/../../../Resources/config'));
+            $loader->load('jku_source.yml');
+            if (\class_exists(JKULoaderCommand::class)) {
+                $loader->load('jku_commands.yml');
             }
             $container->setAlias('jose.http_client', $configs[$this->name()]['client']);
             $container->setAlias('jose.request_factory', $configs[$this->name()]['request_factory']);
         }
     }
 
-    public function getNodeDefinition(NodeDefinition $node): void
+    public function getNodeDefinition(NodeDefinition $node)
     {
         $node
             ->children()
@@ -49,8 +58,7 @@ class JKUSource implements Source
             ->end()
             ->end()
             ->end()
-            ->end()
-        ;
+            ->end();
     }
 
     public function prepend(ContainerBuilder $container, array $config): array

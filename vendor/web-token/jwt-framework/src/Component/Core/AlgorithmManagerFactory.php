@@ -2,24 +2,37 @@
 
 declare(strict_types=1);
 
-namespace Jose\Component\Core;
+/*
+ * The MIT License (MIT)
+ *
+ * Copyright (c) 2014-2018 Spomky-Labs
+ *
+ * This software may be modified and distributed under the terms
+ * of the MIT license.  See the LICENSE file for details.
+ */
 
-use InvalidArgumentException;
-use function is_string;
+namespace Jose\Component\Core;
 
 class AlgorithmManagerFactory
 {
-    private array $algorithms = [];
+    /**
+     * @var array
+     */
+    private $algorithms = [];
 
     /**
      * Adds an algorithm.
      *
-     * Each algorithm is identified by an alias hence it is allowed to have the same algorithm twice (or more). This can
-     * be helpful when an algorithm have several configuration options.
+     * Each algorithm is identified by an alias hence it is allowed to have the same algorithm twice (or more).
+     * This can be helpful when an algorithm have several configuration options.
+     *
+     * @return AlgorithmManagerFactory
      */
-    public function add(string $alias, Algorithm $algorithm): void
+    public function add(string $alias, Algorithm $algorithm): self
     {
         $this->algorithms[$alias] = $algorithm;
+
+        return $this;
     }
 
     /**
@@ -29,12 +42,12 @@ class AlgorithmManagerFactory
      */
     public function aliases(): array
     {
-        return array_keys($this->algorithms);
+        return \array_keys($this->algorithms);
     }
 
     /**
-     * Returns all algorithms supported by this factory. This is an associative array. Keys are the aliases of the
-     * algorithms.
+     * Returns all algorithms supported by this factory.
+     * This is an associative array. Keys are the aliases of the algorithms.
      *
      * @return Algorithm[]
      */
@@ -52,18 +65,13 @@ class AlgorithmManagerFactory
     {
         $algorithms = [];
         foreach ($aliases as $alias) {
-            if (! is_string($alias)) {
-                throw new InvalidArgumentException('Invalid alias');
+            if (\array_key_exists($alias, $this->algorithms)) {
+                $algorithms[] = $this->algorithms[$alias];
+            } else {
+                throw new \InvalidArgumentException(\sprintf('The algorithm with the alias "%s" is not supported.', $alias));
             }
-            if (! isset($this->algorithms[$alias])) {
-                throw new InvalidArgumentException(sprintf(
-                    'The algorithm with the alias "%s" is not supported.',
-                    $alias
-                ));
-            }
-            $algorithms[] = $this->algorithms[$alias];
         }
 
-        return new AlgorithmManager($algorithms);
+        return AlgorithmManager::create($algorithms);
     }
 }

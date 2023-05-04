@@ -2,77 +2,91 @@
 
 declare(strict_types=1);
 
+/*
+ * The MIT License (MIT)
+ *
+ * Copyright (c) 2014-2018 Spomky-Labs
+ *
+ * This software may be modified and distributed under the terms
+ * of the MIT license.  See the LICENSE file for details.
+ */
+
 namespace Jose\Component\Core;
 
-use function array_key_exists;
-use ArrayIterator;
-use function count;
-use const COUNT_NORMAL;
-use Countable;
-use function in_array;
-use InvalidArgumentException;
-use function is_array;
-use IteratorAggregate;
-use const JSON_THROW_ON_ERROR;
-use JsonSerializable;
-use Traversable;
-
-class JWKSet implements Countable, IteratorAggregate, JsonSerializable
+class JWKSet implements \Countable, \IteratorAggregate, \JsonSerializable
 {
-    private array $keys = [];
+    /**
+     * @var array
+     */
+    private $keys = [];
 
     /**
+     * JWKSet constructor.
+     *
      * @param JWK[] $keys
      */
-    public function __construct(array $keys)
+    private function __construct(array $keys)
     {
-        foreach ($keys as $k => $key) {
-            if (! $key instanceof JWK) {
-                throw new InvalidArgumentException('Invalid list. Should only contains JWK objects');
-            }
-
-            if ($key->has('kid')) {
-                unset($keys[$k]);
-                $this->keys[$key->get('kid')] = $key;
-            } else {
-                $this->keys[] = $key;
-            }
-        }
+        $this->keys = $keys;
     }
 
     /**
      * Creates a JWKSet object using the given values.
+     *
+     * @return JWKSet
      */
     public static function createFromKeyData(array $data): self
     {
-        if (! isset($data['keys'])) {
-            throw new InvalidArgumentException('Invalid data.');
-        }
-        if (! is_array($data['keys'])) {
-            throw new InvalidArgumentException('Invalid data.');
+        if (!\array_key_exists('keys', $data) || !\is_array($data['keys'])) {
+            throw new \InvalidArgumentException('Invalid data.');
         }
 
-        $jwkset = new self([]);
+        $keys = [];
         foreach ($data['keys'] as $key) {
-            $jwk = new JWK($key);
+            $jwk = JWK::create($key);
             if ($jwk->has('kid')) {
-                $jwkset->keys[$jwk->get('kid')] = $jwk;
-            } else {
-                $jwkset->keys[] = $jwk;
+                $keys[$jwk->get('kid')] = $jwk;
+
+                continue;
+            }
+            $keys[] = $jwk;
+        }
+
+        return new self($keys);
+    }
+
+    /**
+     * Creates a JWKSet object using the given JWK objects.
+     *
+     * @param JWK[] $keys
+     *
+     * @return JWKSet
+     */
+    public static function createFromKeys(array $keys): self
+    {
+        $keys = \array_filter($keys, function () {
+            return true;
+        });
+        foreach ($keys as $k => $v) {
+            if ($v->has('kid')) {
+                unset($keys[$k]);
+                $keys[$v->get('kid')] = $v;
             }
         }
 
-        return $jwkset;
+        return new self($keys);
     }
 
     /**
      * Creates a JWKSet object using the given Json string.
+     *
+     * @return JWKSet
      */
     public static function createFromJson(string $json): self
     {
-        $data = json_decode($json, true, 512, JSON_THROW_ON_ERROR);
-        if (! is_array($data)) {
-            throw new InvalidArgumentException('Invalid argument.');
+        $data = \json_decode($json, true);
+        if (!\is_array($data)) {
+            throw new \InvalidArgumentException('Invalid argument.');
         }
 
         return self::createFromKeyData($data);
@@ -89,7 +103,10 @@ class JWKSet implements Countable, IteratorAggregate, JsonSerializable
     }
 
     /**
-     * Add key to store in the key set. This method is immutable and will return a new object.
+     * Add key to store in the key set.
+     * This method is immutable and will return a new object.
+     *
+     * @return JWKSet
      */
     public function with(JWK $jwk): self
     {
@@ -105,13 +122,16 @@ class JWKSet implements Countable, IteratorAggregate, JsonSerializable
     }
 
     /**
-     * Remove key from the key set. This method is immutable and will return a new object.
+     * Remove key from the key set.
+     * This method is immutable and will return a new object.
      *
      * @param int|string $key Key to remove from the key set
+     *
+     * @return JWKSet
      */
-    public function without(int|string $key): self
+    public function without($key): self
     {
-        if (! $this->has($key)) {
+        if (!$this->has($key)) {
             return $this;
         }
 
@@ -123,19 +143,23 @@ class JWKSet implements Countable, IteratorAggregate, JsonSerializable
 
     /**
      * Returns true if the key set contains a key with the given index.
+     *
+     * @param int|string $index
      */
-    public function has(int|string $index): bool
+    public function has($index): bool
     {
-        return array_key_exists($index, $this->keys);
+        return \array_key_exists($index, $this->keys);
     }
 
     /**
      * Returns the key with the given index. Throws an exception if the index is not present in the key store.
+     *
+     * @param int|string $index
      */
-    public function get(int|string $index): JWK
+    public function get($index): JWK
     {
-        if (! $this->has($index)) {
-            throw new InvalidArgumentException('Undefined index.');
+        if (!$this->has($index)) {
+            throw new \InvalidArgumentException('Undefined index.');
         }
 
         return $this->keys[$index];
@@ -146,9 +170,7 @@ class JWKSet implements Countable, IteratorAggregate, JsonSerializable
      */
     public function jsonSerialize(): array
     {
-        return [
-            'keys' => array_values($this->keys),
-        ];
+        return ['keys' => \array_values($this->keys)];
     }
 
     /**
@@ -158,11 +180,12 @@ class JWKSet implements Countable, IteratorAggregate, JsonSerializable
      */
     public function count($mode = COUNT_NORMAL): int
     {
-        return count($this->keys, $mode);
+        return \count($this->keys, $mode);
     }
 
     /**
-     * Try to find a key that fits on the selected requirements. Returns null if not found.
+     * Try to find a key that fits on the selected requirements.
+     * Returns null if not found.
      *
      * @param string         $type         Must be 'sig' (signature) or 'enc' (encryption)
      * @param Algorithm|null $algorithm    Specifies the algorithm to be used
@@ -170,8 +193,8 @@ class JWKSet implements Countable, IteratorAggregate, JsonSerializable
      */
     public function selectKey(string $type, ?Algorithm $algorithm = null, array $restrictions = []): ?JWK
     {
-        if (! in_array($type, ['enc', 'sig'], true)) {
-            throw new InvalidArgumentException('Allowed key types are "sig" or "enc".');
+        if (!\in_array($type, ['enc', 'sig'], true)) {
+            throw new \InvalidArgumentException('Allowed key types are "sig" or "enc".');
         }
 
         $result = [];
@@ -179,82 +202,57 @@ class JWKSet implements Countable, IteratorAggregate, JsonSerializable
             $ind = 0;
 
             $can_use = $this->canKeyBeUsedFor($type, $key);
-            if ($can_use === false) {
+            if (false === $can_use) {
                 continue;
             }
             $ind += $can_use;
 
             $alg = $this->canKeyBeUsedWithAlgorithm($algorithm, $key);
-            if ($alg === false) {
+            if (false === $alg) {
                 continue;
             }
             $ind += $alg;
 
-            if ($this->doesKeySatisfyRestrictions($restrictions, $key) === false) {
+            if (false === $this->doesKeySatisfyRestrictions($restrictions, $key)) {
                 continue;
             }
 
-            $result[] = [
-                'key' => $key,
-                'ind' => $ind,
-            ];
+            $result[] = ['key' => $key, 'ind' => $ind];
         }
 
-        if (count($result) === 0) {
+        if (empty($result)) {
             return null;
         }
 
-        usort($result, [$this, 'sortKeys']);
+        \usort($result, [$this, 'sortKeys']);
 
         return $result[0]['key'];
     }
 
     /**
-     * Internal method only. Should not be used.
-     *
-     * @internal
-     * @internal
+     * @return bool|int
      */
-    public static function sortKeys(array $a, array $b): int
-    {
-        return $b['ind'] <=> $a['ind'];
-    }
-
-    /**
-     * Internal method only. Should not be used.
-     *
-     * @internal
-     */
-    public function getIterator(): Traversable
-    {
-        return new ArrayIterator($this->keys);
-    }
-
-    private function canKeyBeUsedFor(string $type, JWK $key): bool|int
+    private function canKeyBeUsedFor(string $type, JWK $key)
     {
         if ($key->has('use')) {
             return $type === $key->get('use') ? 1 : false;
         }
         if ($key->has('key_ops')) {
-            $key_ops = $key->get('key_ops');
-            if (! is_array($key_ops)) {
-                throw new InvalidArgumentException(
-                    'Invalid key parameter "key_ops". Should be a list of key operations'
-                );
-            }
-
-            return $type === self::convertKeyOpsToKeyUse($key_ops) ? 1 : false;
+            return $type === self::convertKeyOpsToKeyUse($key->get('use')) ? 1 : false;
         }
 
         return 0;
     }
 
-    private function canKeyBeUsedWithAlgorithm(?Algorithm $algorithm, JWK $key): bool|int
+    /**
+     * @return bool|int
+     */
+    private function canKeyBeUsedWithAlgorithm(?Algorithm $algorithm, JWK $key)
     {
-        if ($algorithm === null) {
+        if (null === $algorithm) {
             return 0;
         }
-        if (! in_array($key->get('kty'), $algorithm->allowedKeyTypes(), true)) {
+        if (!\in_array($key->get('kty'), $algorithm->allowedKeyTypes(), true)) {
             return false;
         }
         if ($key->has('alg')) {
@@ -267,7 +265,7 @@ class JWKSet implements Countable, IteratorAggregate, JsonSerializable
     private function doesKeySatisfyRestrictions(array $restrictions, JWK $key): bool
     {
         foreach ($restrictions as $k => $v) {
-            if (! $key->has($k) || $v !== $key->get($k)) {
+            if (!$key->has($k) || $v !== $key->get($k)) {
                 return false;
             }
         }
@@ -275,23 +273,44 @@ class JWKSet implements Countable, IteratorAggregate, JsonSerializable
         return true;
     }
 
-    private static function convertKeyOpsToKeyUse(array $key_ops): string
+    private static function convertKeyOpsToKeyUse(string $key_ops): string
     {
-        return match (true) {
-            in_array('verify', $key_ops, true), in_array('sign', $key_ops, true) => 'sig',
-            in_array('encrypt', $key_ops, true), in_array('decrypt', $key_ops, true), in_array(
-                'wrapKey',
-                $key_ops,
-                true
-            ), in_array(
-                'unwrapKey',
-                $key_ops,
-                true
-            ), in_array('deriveKey', $key_ops, true), in_array('deriveBits', $key_ops, true) => 'enc',
-            default => throw new InvalidArgumentException(sprintf(
-                'Unsupported key operation value "%s"',
-                implode(', ', $key_ops)
-            )),
-        };
+        switch ($key_ops) {
+            case 'verify':
+            case 'sign':
+                return 'sig';
+            case 'encrypt':
+            case 'decrypt':
+            case 'wrapKey':
+            case 'unwrapKey':
+                return 'enc';
+            default:
+                throw new \InvalidArgumentException(\sprintf('Unsupported key operation value "%s"', $key_ops));
+        }
+    }
+
+    /**
+     * Internal method only. Should not be used.
+     *
+     * @internal
+     * @internal
+     */
+    public static function sortKeys(array $a, array $b): int
+    {
+        if ($a['ind'] === $b['ind']) {
+            return 0;
+        }
+
+        return ($a['ind'] > $b['ind']) ? -1 : 1;
+    }
+
+    /**
+     * Internal method only. Should not be used.
+     *
+     * @internal
+     */
+    public function getIterator()
+    {
+        return new \ArrayIterator($this->keys);
     }
 }

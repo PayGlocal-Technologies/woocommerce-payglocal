@@ -2,27 +2,89 @@
 
 declare(strict_types=1);
 
+/*
+ * The MIT License (MIT)
+ *
+ * Copyright (c) 2014-2018 Spomky-Labs
+ *
+ * This software may be modified and distributed under the terms
+ * of the MIT license.  See the LICENSE file for details.
+ */
+
 namespace Jose\Component\Encryption;
 
-use function array_key_exists;
-use function count;
-use InvalidArgumentException;
 use Jose\Component\Core\JWT;
 
 class JWE implements JWT
 {
-    private ?string $payload = null;
+    /**
+     * @var Recipient[]
+     */
+    private $recipients = [];
 
-    public function __construct(
-        private readonly ?string $ciphertext,
-        private readonly string $iv,
-        private readonly string $tag,
-        private readonly ?string $aad = null,
-        private readonly array $sharedHeader = [],
-        private readonly array $sharedProtectedHeader = [],
-        private readonly ?string $encodedSharedProtectedHeader = null,
-        private readonly array $recipients = []
-    ) {
+    /**
+     * @var string|null
+     */
+    private $ciphertext = null;
+
+    /**
+     * @var string
+     */
+    private $iv;
+
+    /**
+     * @var string|null
+     */
+    private $aad = null;
+
+    /**
+     * @var string
+     */
+    private $tag;
+
+    /**
+     * @var array
+     */
+    private $sharedHeader = [];
+
+    /**
+     * @var array
+     */
+    private $sharedProtectedHeader = [];
+
+    /**
+     * @var string|null
+     */
+    private $encodedSharedProtectedHeader = null;
+
+    /**
+     * @var string|null
+     */
+    private $payload = null;
+
+    /**
+     * JWE constructor.
+     */
+    private function __construct(string $ciphertext, string $iv, string $tag, ?string $aad = null, array $sharedHeader = [], array $sharedProtectedHeader = [], ?string $encodedSharedProtectedHeader = null, array $recipients = [])
+    {
+        $this->ciphertext = $ciphertext;
+        $this->iv = $iv;
+        $this->aad = $aad;
+        $this->tag = $tag;
+        $this->sharedHeader = $sharedHeader;
+        $this->sharedProtectedHeader = $sharedProtectedHeader;
+        $this->encodedSharedProtectedHeader = $encodedSharedProtectedHeader;
+        $this->recipients = $recipients;
+    }
+
+    /**
+     * Creates a new JWE object.
+     *
+     * @return JWE
+     */
+    public static function create(string $ciphertext, string $iv, string $tag, ?string $aad = null, array $sharedHeader = [], array $sharedProtectedHeader = [], ?string $encodedSharedProtectedHeader = null, array $recipients = []): self
+    {
+        return new self($ciphertext, $iv, $tag, $aad, $sharedHeader, $sharedProtectedHeader, $encodedSharedProtectedHeader, $recipients);
     }
 
     public function getPayload(): ?string
@@ -31,7 +93,10 @@ class JWE implements JWT
     }
 
     /**
-     * Set the payload. This method is immutable and a new object will be returned.
+     * Set the payload.
+     * This method is immutable and a new object will be returned.
+     *
+     * @return JWE
      */
     public function withPayload(string $payload): self
     {
@@ -46,7 +111,7 @@ class JWE implements JWT
      */
     public function countRecipients(): int
     {
-        return count($this->recipients);
+        return \count($this->recipients);
     }
 
     /**
@@ -54,7 +119,7 @@ class JWE implements JWT
      */
     public function isEncrypted(): bool
     {
-        return $this->getCiphertext() !== null;
+        return null !== $this->getCiphertext();
     }
 
     /**
@@ -72,8 +137,8 @@ class JWE implements JWT
      */
     public function getRecipient(int $id): Recipient
     {
-        if (! isset($this->recipients[$id])) {
-            throw new InvalidArgumentException('The recipient does not exist.');
+        if (!\array_key_exists($id, $this->recipients)) {
+            throw new \InvalidArgumentException('The recipient does not exist.');
         }
 
         return $this->recipients[$id];
@@ -130,8 +195,8 @@ class JWE implements JWT
     }
 
     /**
-     * Returns the shared protected header parameter identified by the given key. Throws an exception is the the
-     * parameter is not available.
+     * Returns the shared protected header parameter identified by the given key.
+     * Throws an exception is the the parameter is not available.
      *
      * @param string $key The key
      *
@@ -139,11 +204,11 @@ class JWE implements JWT
      */
     public function getSharedProtectedHeaderParameter(string $key)
     {
-        if (! $this->hasSharedProtectedHeaderParameter($key)) {
-            throw new InvalidArgumentException(sprintf('The shared protected header "%s" does not exist.', $key));
+        if ($this->hasSharedProtectedHeaderParameter($key)) {
+            return $this->sharedProtectedHeader[$key];
         }
 
-        return $this->sharedProtectedHeader[$key];
+        throw new \InvalidArgumentException(\sprintf('The shared protected header "%s" does not exist.', $key));
     }
 
     /**
@@ -153,7 +218,7 @@ class JWE implements JWT
      */
     public function hasSharedProtectedHeaderParameter(string $key): bool
     {
-        return array_key_exists($key, $this->sharedProtectedHeader);
+        return \array_key_exists($key, $this->sharedProtectedHeader);
     }
 
     /**
@@ -165,8 +230,8 @@ class JWE implements JWT
     }
 
     /**
-     * Returns the shared header parameter identified by the given key. Throws an exception is the the parameter is not
-     * available.
+     * Returns the shared header parameter identified by the given key.
+     * Throws an exception is the the parameter is not available.
      *
      * @param string $key The key
      *
@@ -174,11 +239,11 @@ class JWE implements JWT
      */
     public function getSharedHeaderParameter(string $key)
     {
-        if (! $this->hasSharedHeaderParameter($key)) {
-            throw new InvalidArgumentException(sprintf('The shared header "%s" does not exist.', $key));
+        if ($this->hasSharedHeaderParameter($key)) {
+            return $this->sharedHeader[$key];
         }
 
-        return $this->sharedHeader[$key];
+        throw new \InvalidArgumentException(\sprintf('The shared header "%s" does not exist.', $key));
     }
 
     /**
@@ -188,12 +253,12 @@ class JWE implements JWT
      */
     public function hasSharedHeaderParameter(string $key): bool
     {
-        return array_key_exists($key, $this->sharedHeader);
+        return \array_key_exists($key, $this->sharedHeader);
     }
 
     /**
-     * This method splits the JWE into a list of JWEs. It is only useful when the JWE contains more than one recipient
-     * (JSON General Serialization).
+     * This method splits the JWE into a list of JWEs.
+     * It is only useful when the JWE contains more than one recipient (JSON General Serialization).
      *
      * @return JWE[]
      */
@@ -201,7 +266,7 @@ class JWE implements JWT
     {
         $result = [];
         foreach ($this->recipients as $recipient) {
-            $result[] = new self(
+            $result[] = self::create(
                 $this->ciphertext,
                 $this->iv,
                 $this->tag,

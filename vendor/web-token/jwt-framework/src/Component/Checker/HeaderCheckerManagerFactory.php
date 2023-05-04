@@ -2,25 +2,32 @@
 
 declare(strict_types=1);
 
-namespace Jose\Component\Checker;
+/*
+ * The MIT License (MIT)
+ *
+ * Copyright (c) 2014-2018 Spomky-Labs
+ *
+ * This software may be modified and distributed under the terms
+ * of the MIT license.  See the LICENSE file for details.
+ */
 
-use InvalidArgumentException;
+namespace Jose\Component\Checker;
 
 class HeaderCheckerManagerFactory
 {
     /**
      * @var HeaderChecker[]
      */
-    private array $checkers = [];
+    private $checkers = [];
 
     /**
      * @var TokenTypeSupport[]
      */
-    private array $tokenTypes = [];
+    private $tokenTypes = [];
 
     /**
-     * This method creates a Header Checker Manager and populate it with the header parameter checkers found based on
-     * the alias. If the alias is not supported, an InvalidArgumentException is thrown.
+     * This method creates a Header Checker Manager and populate it with the header parameter checkers found based on the alias.
+     * If the alias is not supported, an InvalidArgumentException is thrown.
      *
      * @param string[] $aliases
      */
@@ -28,33 +35,40 @@ class HeaderCheckerManagerFactory
     {
         $checkers = [];
         foreach ($aliases as $alias) {
-            if (! isset($this->checkers[$alias])) {
-                throw new InvalidArgumentException(sprintf(
-                    'The header checker with the alias "%s" is not supported.',
-                    $alias
-                ));
+            if (\array_key_exists($alias, $this->checkers)) {
+                $checkers[] = $this->checkers[$alias];
+            } else {
+                throw new \InvalidArgumentException(\sprintf('The header checker with the alias "%s" is not supported.', $alias));
             }
-            $checkers[] = $this->checkers[$alias];
         }
 
-        return new HeaderCheckerManager($checkers, $this->tokenTypes);
+        return HeaderCheckerManager::create($checkers, $this->tokenTypes);
     }
 
     /**
-     * This method adds a header parameter checker to this factory. The checker is uniquely identified by an alias. This
-     * allows the same header parameter checker to be added twice (or more) using several configuration options.
+     * This method adds a header parameter checker to this factory.
+     * The checker is uniquely identified by an alias. This allows the same header parameter checker to be added twice (or more)
+     * using several configuration options.
+     *
+     * @return HeaderCheckerManagerFactory
      */
-    public function add(string $alias, HeaderChecker $checker): void
+    public function add(string $alias, HeaderChecker $checker): self
     {
         $this->checkers[$alias] = $checker;
+
+        return $this;
     }
 
     /**
      * This method adds a token type support to this factory.
+     *
+     * @return HeaderCheckerManagerFactory
      */
-    public function addTokenTypeSupport(TokenTypeSupport $tokenType): void
+    public function addTokenTypeSupport(TokenTypeSupport $tokenType): self
     {
         $this->tokenTypes[] = $tokenType;
+
+        return $this;
     }
 
     /**
@@ -64,7 +78,7 @@ class HeaderCheckerManagerFactory
      */
     public function aliases(): array
     {
-        return array_keys($this->checkers);
+        return \array_keys($this->checkers);
     }
 
     /**
