@@ -53,9 +53,9 @@ function wc_payglocal_payment_gateway_init()
         public function __construct()
         {
             $this->id = 'payglocal_payment_gateway';
-            $this->icon = apply_filters('woocommerce_payglocal_icon', plugins_url('assets/images/payglocal.png', __FILE__));
+            //$this->icon = apply_filters('woocommerce_payglocal_icon', plugins_url('assets/images/payglocal.png', __FILE__));
             $this->has_fields = false;
-            $this->method_title = __('PayGlocal Payments', 'woocommerce-payglocal-payment');
+            $this->method_title = __('International Debit / Credit Cards', 'woocommerce-payglocal-payment');
             $this->method_description = __('This plugin allows any merchant to accept payments with payglocal payment service.', 'woocommerce-payglocal-payment');
 
             $this->init_form_fields();
@@ -90,7 +90,7 @@ function wc_payglocal_payment_gateway_init()
                     'title' => __('Title', 'woocommerce-payglocal-payment'),
                     'description' => __('Payment method title to show on the checkout page.', 'woocommerce-payglocal-payment'),
                     'type' => 'text',
-                    'default' => __('PayGlocal Payment', 'woocommerce-payglocal-payment'),
+                    'default' => __('International Debit / Credit Cards', 'woocommerce-payglocal-payment'),
                     'desc_tip' => false,
                     'required' => true,
                 ),
@@ -381,7 +381,7 @@ function wc_payglocal_payment_gateway_init()
             }
             
             $data = [
-                "merchantTxnId" => $order->id . '#' . $this->createPayGlSRandomString(16),
+                "merchantTxnId" => $order->id . $this->createPayGlSRandomString(16),
                 "merchantUniqueId" => $order->id . '#' . $this->createPayGlSRandomString(16),
                 "paymentData" => array(
                     "totalAmount" => $order->get_total(),
